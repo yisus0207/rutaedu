@@ -2,20 +2,38 @@
 
 import React, { useState } from "react";
 import Navbar from "@/components/Navbar";
-import { LogIn, Mail, Lock, Sparkles, Globe } from "lucide-react";
+import { LogIn, Mail, Lock, Sparkles, Globe, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg("");
     setLoading(true);
-    setTimeout(() => {
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (error) {
+        setErrorMsg(error.message);
+      } else {
+        router.push("/dashboard");
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || "Ocurrió un error inesperado.");
+    } finally {
       setLoading(false);
-      alert("Inicio de sesión de demostración exitoso.");
-    }, 1000);
+    }
   };
 
   return (
@@ -28,6 +46,13 @@ export default function LoginPage() {
             <h1 className="text-xl md:text-2xl font-extrabold text-text-primary">Iniciar sesión</h1>
             <p className="text-xs text-text-secondary">Encuentra tu camino académico y guarda tus opciones favoritas.</p>
           </div>
+
+          {errorMsg && (
+            <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl p-3.5 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <span className="font-semibold">{errorMsg}</span>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
