@@ -744,67 +744,67 @@ on conflict do nothing;
 
 -- Insert Programs
 insert into programs (id, name, slug, level, description, category, degree_title) values
-  ('p1000000-0000-0000-0000-000000000001', 'Ingeniería de Sistemas y Computación', 'ingenieria-de-sistemas', 'pregrado', 'Diseño de software, ciberseguridad, arquitectura de datos y redes.', 'Ingeniería', 'Ingeniero de Sistemas'),
-  ('p1000000-0000-0000-0000-000000000002', 'Medicina', 'medicina', 'pregrado', 'Formación integral en ciencias médicas y cuidado de la salud humana.', 'Salud', 'Médico Cirujano'),
-  ('p1000000-0000-0000-0000-000000000003', 'Desarrollo Full Stack Web', 'desarrollo-full-stack', 'bootcamp', 'Aprende frontend y backend en un programa intensivo de 16 semanas.', 'Tecnología', 'Desarrollador Full Stack')
+  ('d1000000-0000-0000-0000-000000000001', 'Ingeniería de Sistemas y Computación', 'ingenieria-de-sistemas', 'pregrado', 'Diseño de software, ciberseguridad, arquitectura de datos y redes.', 'Ingeniería', 'Ingeniero de Sistemas'),
+  ('d1000000-0000-0000-0000-000000000002', 'Medicina', 'medicina', 'pregrado', 'Formación integral en ciencias médicas y cuidado de la salud humana.', 'Salud', 'Médico Cirujano'),
+  ('d1000000-0000-0000-0000-000000000003', 'Desarrollo Full Stack Web', 'desarrollo-full-stack', 'bootcamp', 'Aprende frontend y backend en un programa intensivo de 16 semanas.', 'Tecnología', 'Desarrollador Full Stack')
 on conflict do nothing;
 
 -- Program-Campus relations
 insert into program_campuses (program_id, campus_id, tuition_cost, currency, duration_semesters, modality) values
-  ('p1000000-0000-0000-0000-000000000001', 'ca000000-0000-0000-0000-000000000001', 22000000.00, 'COP', 10, 'presencial'),
-  ('p1000000-0000-0000-0000-000000000002', 'ca000000-0000-0000-0000-000000000002', 4500000.00, 'COP', 12, 'presencial'),
-  ('p1000000-0000-0000-0000-000000000003', 'ca000000-0000-0000-0000-000000000003', 4900000.00, 'COP', 1, 'virtual')
+  ('d1000000-0000-0000-0000-000000000001', 'ca000000-0000-0000-0000-000000000001', 22000000.00, 'COP', 10, 'presencial'),
+  ('d1000000-0000-0000-0000-000000000002', 'ca000000-0000-0000-0000-000000000002', 4500000.00, 'COP', 12, 'presencial'),
+  ('d1000000-0000-0000-0000-000000000003', 'ca000000-0000-0000-0000-000000000003', 4900000.00, 'COP', 1, 'virtual')
 on conflict do nothing;
 
 -- Insert Scholarships
 insert into scholarships (id, name, slug, provider, coverage_percentage, description, benefits, requirements, deadline) values
-  ('s1000000-0000-0000-0000-000000000001', 'Beca Talento Digital', 'beca-talento-digital', 'MinTIC Colombia', 100.00, 'Financiación total de carreras tecnológicas.', 'Cubre el 100% de la matrícula académica y subsidio mensual.', 'Tener nacionalidad colombiana y pertenecer al Sisbén A, B o C.', '2026-11-30')
+  ('d2000000-0000-0000-0000-000000000001', 'Beca Talento Digital', 'beca-talento-digital', 'MinTIC Colombia', 100.00, 'Financiación total de carreras tecnológicas.', 'Cubre el 100% de la matrícula académica y subsidio mensual.', 'Tener nacionalidad colombiana y pertenecer al Sisbén A, B o C.', '2026-11-30')
 on conflict do nothing;
 
 -- Scholarship program links
 insert into scholarship_programs (scholarship_id, program_id) values
-  ('s1000000-0000-0000-0000-000000000001', 'p1000000-0000-0000-0000-000000000001'),
-  ('s1000000-0000-0000-0000-000000000001', 'p1000000-0000-0000-0000-000000000003')
+  ('d2000000-0000-0000-0000-000000000001', 'd1000000-0000-0000-0000-000000000001'),
+  ('d2000000-0000-0000-0000-000000000001', 'd1000000-0000-0000-0000-000000000003')
 on conflict do nothing;
 
 -- Insert Vocational Test
 insert into vocational_tests (id, title, description) values
-  ('v1000000-0000-0000-0000-000000000001', 'Test Vocacional de Intereses Profesionales', 'Descubre qué carreras se adaptan a tu perfil psicológico, gustos y habilidades a través de este cuestionario interactivo basado en el modelo Holland (RIASEC).')
+  ('d3000000-0000-0000-0000-000000000001', 'Test Vocacional de Intereses Profesionales', 'Descubre qué carreras se adaptan a tu perfil psicológico, gustos y habilidades a través de este cuestionario interactivo basado en el modelo Holland (RIASEC).')
 on conflict do nothing;
 
 -- Insert Vocational Questions (Sample of Holland RIASEC)
 insert into vocational_questions (id, test_id, question_text, dimension, order_number) values
-  ('q1000000-0000-0000-0000-000000000001', 'v1000000-0000-0000-0000-000000000001', 'Me gusta reparar aparatos eléctricos o mecánicos.', 'R', 1),
-  ('q1000000-0000-0000-0000-000000000002', 'v1000000-0000-0000-0000-000000000001', 'Disfruto resolviendo acertijos matemáticos complejos o científicos.', 'I', 2),
-  ('q1000000-0000-0000-0000-000000000003', 'v1000000-0000-0000-0000-000000000001', 'Me agrada escribir historias, dibujar o tocar instrumentos musicales.', 'A', 3),
-  ('q1000000-0000-0000-0000-000000000004', 'v1000000-0000-0000-0000-000000000001', 'Me gusta enseñar, aconsejar o ayudar a otras personas.', 'S', 4),
-  ('q1000000-0000-0000-0000-000000000005', 'v1000000-0000-0000-0000-000000000001', 'Prefiero liderar proyectos grupales, convencer o vender ideas.', 'E', 5),
-  ('q1000000-0000-0000-0000-000000000006', 'v1000000-0000-0000-0000-000000000001', 'Disfruto organizar archivos, bases de datos o llevar contabilidades.', 'C', 6)
+  ('d4000000-0000-0000-0000-000000000001', 'd3000000-0000-0000-0000-000000000001', 'Me gusta reparar aparatos eléctricos o mecánicos.', 'R', 1),
+  ('d4000000-0000-0000-0000-000000000002', 'd3000000-0000-0000-0000-000000000001', 'Disfruto resolviendo acertijos matemáticos complejos o científicos.', 'I', 2),
+  ('d4000000-0000-0000-0000-000000000003', 'd3000000-0000-0000-0000-000000000001', 'Me agrada escribir historias, dibujar o tocar instrumentos musicales.', 'A', 3),
+  ('d4000000-0000-0000-0000-000000000004', 'd3000000-0000-0000-0000-000000000001', 'Me gusta enseñar, aconsejar o ayudar a otras personas.', 'S', 4),
+  ('d4000000-0000-0000-0000-000000000005', 'd3000000-0000-0000-0000-000000000001', 'Prefiero liderar proyectos grupales, convencer o vender ideas.', 'E', 5),
+  ('d4000000-0000-0000-0000-000000000006', 'd3000000-0000-0000-0000-000000000001', 'Disfruto organizar archivos, bases de datos o llevar contabilidades.', 'C', 6)
 on conflict do nothing;
 
 -- Insert Vocational Answers mapping
 insert into vocational_answers (question_id, answer_text, score_mapping) values
-  ('q1000000-0000-0000-0000-000000000001', 'Totalmente de acuerdo', '{"R": 3}'),
-  ('q1000000-0000-0000-0000-000000000001', 'De acuerdo', '{"R": 2}'),
-  ('q1000000-0000-0000-0000-000000000001', 'En desacuerdo', '{"R": 0}'),
+  ('d4000000-0000-0000-0000-000000000001', 'Totalmente de acuerdo', '{"R": 3}'),
+  ('d4000000-0000-0000-0000-000000000001', 'De acuerdo', '{"R": 2}'),
+  ('d4000000-0000-0000-0000-000000000001', 'En desacuerdo', '{"R": 0}'),
 
-  ('q1000000-0000-0000-0000-000000000002', 'Totalmente de acuerdo', '{"I": 3}'),
-  ('q1000000-0000-0000-0000-000000000002', 'De acuerdo', '{"I": 2}'),
-  ('q1000000-0000-0000-0000-000000000002', 'En desacuerdo', '{"I": 0}'),
+  ('d4000000-0000-0000-0000-000000000002', 'Totalmente de acuerdo', '{"I": 3}'),
+  ('d4000000-0000-0000-0000-000000000002', 'De acuerdo', '{"I": 2}'),
+  ('d4000000-0000-0000-0000-000000000002', 'En desacuerdo', '{"I": 0}'),
 
-  ('q1000000-0000-0000-0000-000000000003', 'Totalmente de acuerdo', '{"A": 3}'),
-  ('q1000000-0000-0000-0000-000000000003', 'De acuerdo', '{"A": 2}'),
-  ('q1000000-0000-0000-0000-000000000003', 'En desacuerdo', '{"A": 0}'),
+  ('d4000000-0000-0000-0000-000000000003', 'Totalmente de acuerdo', '{"A": 3}'),
+  ('d4000000-0000-0000-0000-000000000003', 'De acuerdo', '{"A": 2}'),
+  ('d4000000-0000-0000-0000-000000000003', 'En desacuerdo', '{"A": 0}'),
 
-  ('q1000000-0000-0000-0000-000000000004', 'Totalmente de acuerdo', '{"S": 3}'),
-  ('q1000000-0000-0000-0000-000000000004', 'De acuerdo', '{"S": 2}'),
-  ('q1000000-0000-0000-0000-000000000004', 'En desacuerdo', '{"S": 0}'),
+  ('d4000000-0000-0000-0000-000000000004', 'Totalmente de acuerdo', '{"S": 3}'),
+  ('d4000000-0000-0000-0000-000000000004', 'De acuerdo', '{"S": 2}'),
+  ('d4000000-0000-0000-0000-000000000004', 'En desacuerdo', '{"S": 0}'),
 
-  ('q1000000-0000-0000-0000-000000000005', 'Totalmente de acuerdo', '{"E": 3}'),
-  ('q1000000-0000-0000-0000-000000000005', 'De acuerdo', '{"E": 2}'),
-  ('q1000000-0000-0000-0000-000000000005', 'En desacuerdo', '{"E": 0}'),
+  ('d4000000-0000-0000-0000-000000000005', 'Totalmente de acuerdo', '{"E": 3}'),
+  ('d4000000-0000-0000-0000-000000000005', 'De acuerdo', '{"E": 2}'),
+  ('d4000000-0000-0000-0000-000000000005', 'En desacuerdo', '{"E": 0}'),
 
-  ('q1000000-0000-0000-0000-000000000006', 'Totalmente de acuerdo', '{"C": 3}'),
-  ('q1000000-0000-0000-0000-000000000006', 'De acuerdo', '{"C": 2}'),
-  ('q1000000-0000-0000-0000-000000000006', 'En desacuerdo', '{"C": 0}')
+  ('d4000000-0000-0000-0000-000000000006', 'Totalmente de acuerdo', '{"C": 3}'),
+  ('d4000000-0000-0000-0000-000000000006', 'De acuerdo', '{"C": 2}'),
+  ('d4000000-0000-0000-0000-000000000006', 'En desacuerdo', '{"C": 0}')
 on conflict do nothing;
