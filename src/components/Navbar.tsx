@@ -31,8 +31,9 @@ export default function Navbar() {
   return (
     <>
       <header
-        className={`sticky top-0 z-50 transition-all duration-300 w-full ${scrolled ? "glass shadow-sm py-2" : "bg-transparent py-3 sm:py-5"
-          }`}
+        className={`sticky top-0 z-50 transition-[background-color,backdrop-filter,box-shadow] duration-300 w-full py-2.5 sm:py-3.5 ${
+          scrolled ? "glass shadow-sm" : "bg-transparent"
+        }`}
       >
         <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 flex items-center justify-between">
           {/* Logo */}
