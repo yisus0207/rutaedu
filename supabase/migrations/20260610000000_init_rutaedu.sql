@@ -808,3 +808,92 @@ insert into vocational_answers (question_id, answer_text, score_mapping) values
   ('d4000000-0000-0000-0000-000000000006', 'De acuerdo', '{"C": 2}'),
   ('d4000000-0000-0000-0000-000000000006', 'En desacuerdo', '{"C": 0}')
 on conflict do nothing;
+ --luego
+ -- ====================================================
+-- 1. TRIGGER PARA CREAR PERFILES AL REGISTRARSE
+-- ====================================================
+create or replace function public.handle_new_user()
+returns trigger as $$
+declare
+  default_role_id uuid;
+begin
+  select id into default_role_id from public.roles where name = 'student' limit 1;
+
+  insert into public.profiles (id, role_id, email, first_name, last_name, status)
+  values (
+    new.id,
+    default_role_id,
+    new.email,
+    coalesce(new.raw_user_meta_data->>'first_name', new.raw_user_meta_data->>'name', ''),
+    coalesce(new.raw_user_meta_data->>'last_name', ''),
+    'active'
+  );
+
+  insert into public.student_profiles (id)
+  values (new.id);
+
+  return new;
+end;
+$$ language plpgsql security definer set search_path = public, pg_temp;
+
+create or replace trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
+-- ====================================================
+-- 2. CORREGIR EL SEARCH_PATH EN LAS FUNCIONES EXISTENTES
+-- ====================================================
+alter function public.sync_campus_coordinates() set search_path = public, pg_temp;
+alter function public.audit_changes_trigger() set search_path = public, pg_temp;
+alter function public.find_nearby_campuses(numeric, numeric, numeric) set search_path = public, pg_temp;
+alter function public.is_campus_admin(uuid, uuid) set search_path = public, pg_temp;
+
+-- ====================================================
+-- 3. SOPORTE PARA LEADS ANÓNIMOS (INVITADOS)
+-- ====================================================
+alter table leads 
+  add column if not exists guest_name varchar(150),
+  add column if not exists guest_email varchar(255),
+  add column if not exists guest_phone varchar(50);
+
+create policy "Anyone can insert leads" on leads
+  for insert with check (true);
+
+-- ====================================================
+-- 4. RELACIÓN PARA ADMINISTRADORES DE INSTITUCIONES
+-- ====================================================
+create table if not exists institution_admins (
+  id uuid primary key default gen_random_uuid(),
+  institution_id uuid not null references institutions(id) on delete cascade,
+  user_id uuid not null references profiles(id) on delete cascade,
+  created_at timestamptz default now(),
+  unique(institution_id, user_id)
+);
+
+alter table institution_admins enable row level security;
+
+create policy "Super admins can manage institution admins" on institution_admins
+  for all using (
+    exists (
+      select 1 from profiles p
+      join roles r on p.role_id = r.id
+      where p.id = auth.uid() and r.name = 'super_admin'
+    )
+  );
+
+create policy "Admins can view their own institution links" on institution_admins
+  for select using (user_id = auth.uid());
+
+-- Función para verificar si un usuario es administrador de una institución
+create or replace function is_institution_admin(inst_uuid uuid, user_uuid uuid)
+returns boolean as $$
+begin
+  return exists (
+    select 1 from institution_admins
+    where institution_id = inst_uuid and user_id = user_uuid
+  );
+end;
+$$ language plpgsql security definer set search_path = public, pg_temp;
+
+create policy "Institution admins can update their institution" on institutions
+  for update using (is_institution_admin(id, auth.uid()));

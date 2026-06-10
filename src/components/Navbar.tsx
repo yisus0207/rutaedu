@@ -2,23 +2,64 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, BookOpen, Compass, Search, Bookmark, Brain, MessageSquare } from "lucide-react";
+import { Menu, X, BookOpen, Compass, Search, Bookmark, Brain, MessageSquare, LogOut, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [user, setUser] = useState<{ email: string; firstName: string } | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        fetchProfile(session.user.id, session.user.email ?? "");
+      }
+    });
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        fetchProfile(session.user.id, session.user.email ?? "");
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchProfile = async (userId: string, email: string) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("first_name, last_name")
+      .eq("id", userId)
+      .single();
+
+    if (data) {
+      setUser({ email, firstName: data.first_name || email.split("@")[0] });
+    } else {
+      setUser({ email, firstName: email.split("@")[0] });
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    router.push("/");
+    setIsOpen(false);
+  };
 
   useEffect(() => {
     let ticking = false;
     const handleScroll = () => {
       if (!ticking) {
         window.requestAnimationFrame(() => {
-          if (window.scrollY > 10) {
-            setScrolled(true);
-          } else {
-            setScrolled(false);
-          }
+          setScrolled(window.scrollY > 10);
           ticking = false;
         });
         ticking = true;
@@ -35,6 +76,8 @@ export default function Navbar() {
     { name: "Mis Oportunidades", href: "/dashboard", icon: Bookmark },
   ];
 
+  const initials = user?.firstName?.charAt(0).toUpperCase() ?? "?";
+
   return (
     <>
       <header
@@ -45,20 +88,11 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 group">
-            {/* Custom SVG Logo: Graduation Cap + Location Pin */}
             <svg viewBox="0 0 60 60" className="w-9.5 h-9.5 sm:w-12 sm:h-12 flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
-              {/* Graduation Cap top diamond - Dark Blue */}
               <path d="M30 10 L52 20 L30 30 L8 20 Z" fill="#0A1E3A" />
-
-              {/* Pin Left Half - Dark Blue */}
               <path d="M30 30 L16 23 L16 35 C16 43 30 50 30 50 Z" fill="#0A1E3A" />
-
-              {/* Pin Right Half - Green */}
               <path d="M30 30 L44 23 L44 35 C44 43 30 50 30 50 Z" fill="#00875A" />
-
-              {/* Central Circle - Green background, white border */}
               <circle cx="30" cy="30" r="8.5" fill="#00875A" stroke="#FFFFFF" strokeWidth="2.5" />
-              {/* Center inner green-teal circle */}
               <circle cx="30" cy="30" r="5" fill="#FFFFFF" />
               <circle cx="30" cy="30" r="2.5" fill="#00875A" />
             </svg>
@@ -97,22 +131,44 @@ export default function Navbar() {
               {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
 
-            {/* Login button (desktop and mobile) */}
-            <Link
-              href="/login"
-              className="inline-flex items-center justify-center px-3.5 h-8 sm:px-5 sm:h-11 rounded-full text-[10px] sm:text-sm font-bold text-white bg-[#00875A] hover:bg-[#006F48] transition-all shadow-sm"
-            >
-              Iniciar sesión
-            </Link>
-
-            {/* Discover Path (Desktop only) */}
-            <Link
-              href="/test-vocacional"
-              className="hidden md:inline-flex items-center justify-center px-5 h-11 rounded-full text-sm font-bold text-[#0F766E] bg-teal-50 hover:bg-teal-100 transition-all border border-teal-100"
-              style={{ minHeight: "44px" }}
-            >
-              Descubrir mi camino
-            </Link>
+            {/* Auth buttons */}
+            {user ? (
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/dashboard"
+                  className="hidden sm:flex items-center gap-2 px-3 h-9 rounded-full bg-slate-100 hover:bg-slate-200 transition-all"
+                >
+                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-[10px] font-extrabold">
+                    {initials}
+                  </div>
+                  <span className="text-xs font-bold text-text-primary max-w-[100px] truncate">{user.firstName}</span>
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-1.5 px-3 h-9 rounded-full text-xs font-bold text-red-600 hover:bg-red-50 transition-all"
+                  title="Cerrar sesión"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Salir</span>
+                </button>
+              </div>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center px-3.5 h-8 sm:px-5 sm:h-11 rounded-full text-[10px] sm:text-sm font-bold text-white bg-[#00875A] hover:bg-[#006F48] transition-all shadow-sm"
+                >
+                  Iniciar sesión
+                </Link>
+                <Link
+                  href="/test-vocacional"
+                  className="hidden md:inline-flex items-center justify-center px-5 h-11 rounded-full text-sm font-bold text-[#0F766E] bg-teal-50 hover:bg-teal-100 transition-all border border-teal-100"
+                  style={{ minHeight: "44px" }}
+                >
+                  Descubrir mi camino
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -121,7 +177,6 @@ export default function Navbar() {
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -130,7 +185,6 @@ export default function Navbar() {
               className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
             />
 
-            {/* Sidebar panel */}
             <motion.div
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
@@ -144,9 +198,7 @@ export default function Navbar() {
                     <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white">
                       <Compass className="w-5 h-5" />
                     </div>
-                    <span className="text-lg font-extrabold text-text-primary">
-                      RutaEdu
-                    </span>
+                    <span className="text-lg font-extrabold text-text-primary">RutaEdu</span>
                   </div>
                   <button
                     onClick={() => setIsOpen(false)}
@@ -155,6 +207,19 @@ export default function Navbar() {
                     <X className="w-6 h-6" />
                   </button>
                 </div>
+
+                {/* User info in mobile */}
+                {user && (
+                  <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl mb-6">
+                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-extrabold">
+                      {initials}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-text-primary">{user.firstName}</p>
+                      <p className="text-[10px] text-text-secondary truncate max-w-[160px]">{user.email}</p>
+                    </div>
+                  </div>
+                )}
 
                 <nav className="flex flex-col space-y-4">
                   {menuItems.map((item) => (
@@ -175,22 +240,35 @@ export default function Navbar() {
               </div>
 
               <div className="flex flex-col space-y-3 pt-6 border-t border-slate-100">
-                <Link
-                  href="/login"
-                  onClick={() => setIsOpen(false)}
-                  className="w-full flex items-center justify-center h-12 rounded-xl text-base font-bold text-primary hover:bg-primary/5 transition-all"
-                  style={{ minHeight: "48px" }}
-                >
-                  Iniciar sesión
-                </Link>
-                <Link
-                  href="/test-vocacional"
-                  onClick={() => setIsOpen(false)}
-                  className="w-full flex items-center justify-center h-12 rounded-xl text-base font-bold text-white bg-primary hover:bg-primary-hover shadow-md transition-all active:scale-95"
-                  style={{ minHeight: "48px" }}
-                >
-                  Descubrir mi camino
-                </Link>
+                {user ? (
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center justify-center gap-2 h-12 rounded-xl text-base font-bold text-red-600 hover:bg-red-50 transition-all"
+                    style={{ minHeight: "48px" }}
+                  >
+                    <LogOut className="w-5 h-5" />
+                    Cerrar sesión
+                  </button>
+                ) : (
+                  <>
+                    <Link
+                      href="/login"
+                      onClick={() => setIsOpen(false)}
+                      className="w-full flex items-center justify-center h-12 rounded-xl text-base font-bold text-primary hover:bg-primary/5 transition-all"
+                      style={{ minHeight: "48px" }}
+                    >
+                      Iniciar sesión
+                    </Link>
+                    <Link
+                      href="/test-vocacional"
+                      onClick={() => setIsOpen(false)}
+                      className="w-full flex items-center justify-center h-12 rounded-xl text-base font-bold text-white bg-primary hover:bg-primary-hover shadow-md transition-all active:scale-95"
+                      style={{ minHeight: "48px" }}
+                    >
+                      Descubrir mi camino
+                    </Link>
+                  </>
+                )}
               </div>
             </motion.div>
           </>
