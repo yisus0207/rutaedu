@@ -276,13 +276,15 @@ export default function UniversidadDashboard() {
       }
 
       // 5. Fetch scholarships owned by this institution
-      const { data: scholarshipsData } = await supabase
-        .from("scholarships")
-        .select("*")
-        .eq("institution_id", campusData.institution_id);
-      
-      if (scholarshipsData) {
-        setScholarships(scholarshipsData);
+      if (campusData?.institution_id) {
+        const { data: scholarshipsData } = await supabase
+          .from("scholarships")
+          .select("*")
+          .eq("institution_id", campusData.institution_id);
+        
+        if (scholarshipsData) {
+          setScholarships(scholarshipsData);
+        }
       }
 
     } catch (err: any) {
