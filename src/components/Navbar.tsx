@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, BookOpen, Compass, Search, Bookmark, Brain, MessageSquare, LogOut, User } from "lucide-react";
+import { Menu, X, BookOpen, Compass, Search, Bookmark, Brain, MessageSquare, LogOut, User, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [user, setUser] = useState<{ email: string; firstName: string } | null>(null);
+  const [user, setUser] = useState<{ email: string; firstName: string; role?: string } | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -36,14 +36,26 @@ export default function Navbar() {
   const fetchProfile = async (userId: string, email: string) => {
     const { data, error } = await supabase
       .from("profiles")
-      .select("first_name, last_name")
+      .select("first_name, last_name, role_id")
       .eq("id", userId)
       .single();
 
+    let roleName = "student";
+    if (data?.role_id) {
+      const { data: roleData } = await supabase
+        .from("roles")
+        .select("name")
+        .eq("id", data.role_id)
+        .single();
+      if (roleData) {
+        roleName = roleData.name;
+      }
+    }
+
     if (data) {
-      setUser({ email, firstName: data.first_name || email.split("@")[0] });
+      setUser({ email, firstName: data.first_name || email.split("@")[0], role: roleName });
     } else {
-      setUser({ email, firstName: email.split("@")[0] });
+      setUser({ email, firstName: email.split("@")[0], role: "student" });
     }
   };
 
@@ -69,12 +81,22 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const menuItems = [
-    { name: "Explorar", href: "/explorar", icon: Search },
-    { name: "Test Vocacional", href: "/test-vocacional", icon: Brain },
-    { name: "Asesor IA", href: "/asesor-ia", icon: MessageSquare },
-    { name: "Mis Oportunidades", href: "/dashboard", icon: Bookmark },
-  ];
+  const isPartner = user?.role === "campus_admin" || user?.role === "institution_admin";
+  const isSuperAdmin = user?.role === "super_admin";
+
+  const menuItems = isSuperAdmin
+    ? [
+        { name: "Consola Admin", href: "/admin/dashboard", icon: Settings },
+      ]
+    : isPartner
+    ? [
+        { name: "Panel Administrativo", href: "/universidad/dashboard", icon: BookOpen },
+      ]
+    : [
+        { name: "Explorar", href: "/explorar", icon: Search },
+        { name: "Test Vocacional IA", href: "/asesor-ia", icon: Brain },
+        { name: "Mis Oportunidades", href: "/dashboard", icon: Bookmark },
+      ];
 
   const initials = user?.firstName?.charAt(0).toUpperCase() ?? "?";
 
@@ -133,10 +155,10 @@ export default function Navbar() {
 
             {/* Auth buttons */}
             {user ? (
-              <div className="flex items-center gap-2">
-                <Link
-                  href="/dashboard"
-                  className="hidden sm:flex items-center gap-2 px-3 h-9 rounded-full bg-slate-100 hover:bg-slate-200 transition-all"
+            <div className="flex items-center gap-2">
+              <Link
+                href={isSuperAdmin ? "/admin/dashboard" : isPartner ? "/universidad/dashboard" : "/dashboard"}
+                className="hidden sm:flex items-center gap-2 px-3 h-9 rounded-full bg-slate-100 hover:bg-slate-200 transition-all"
                 >
                   <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-[10px] font-extrabold">
                     {initials}
@@ -161,7 +183,7 @@ export default function Navbar() {
                   Iniciar sesión
                 </Link>
                 <Link
-                  href="/test-vocacional"
+                  href="/asesor-ia"
                   className="hidden md:inline-flex items-center justify-center px-5 h-11 rounded-full text-sm font-bold text-[#0F766E] bg-teal-50 hover:bg-teal-100 transition-all border border-teal-100"
                   style={{ minHeight: "44px" }}
                 >
@@ -260,7 +282,7 @@ export default function Navbar() {
                       Iniciar sesión
                     </Link>
                     <Link
-                      href="/test-vocacional"
+                      href="/asesor-ia"
                       onClick={() => setIsOpen(false)}
                       className="w-full flex items-center justify-center h-12 rounded-xl text-base font-bold text-white bg-primary hover:bg-primary-hover shadow-md transition-all active:scale-95"
                       style={{ minHeight: "48px" }}

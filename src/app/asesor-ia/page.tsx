@@ -5,7 +5,6 @@ import Navbar from "@/components/Navbar";
 import { Send, Sparkles, User, BrainCircuit, ArrowRight, MessageCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
 
 interface Message {
   id: number;
@@ -46,114 +45,32 @@ export default function AIAdvisorPage() {
       text,
     };
 
+    // Keep track of the current history to send to backend (before adding userMsg to state)
+    const currentHistory = messages.map((m) => ({ sender: m.sender, text: m.text }));
+
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setIsTyping(true);
 
     try {
-      // Fetch active programs from Supabase
-      const { data: offerings } = await supabase
-        .from("program_campuses")
-        .select(`
-          programs (
-            id,
-            name,
-            slug,
-            level,
-            category,
-            description
-          ),
-          campuses (
-            name,
-            institutions (
-              name
-            )
-          )
-        `)
-        .eq("status", "active");
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: text,
+          history: currentHistory,
+        }),
+      });
 
-      const normalized = text.toLowerCase();
-      const scoredPrograms = (offerings ?? []).map((o: any) => {
-        const prog = o.programs;
-        if (!prog) return null;
-
-        let score = 0;
-        const name = (prog.name || "").toLowerCase();
-        const cat = (prog.category || "").toLowerCase();
-        const desc = (prog.description || "").toLowerCase();
-        const level = (prog.level || "").toLowerCase();
-
-        // Check for general search term overlaps
-        const terms = normalized.split(/\s+/).filter(t => t.length > 2);
-        for (const term of terms) {
-          if (name.includes(term)) score += 5;
-          if (cat.includes(term)) score += 3;
-          if (desc.includes(term)) score += 2;
-          if (level.includes(term)) score += 1;
-        }
-
-        // Custom keyword mapping helpers
-        if (normalized.includes("tecnología") || normalized.includes("programar") || normalized.includes("desarrollo") || normalized.includes("matemáticas")) {
-          if (cat.includes("tecnología") || cat.includes("ingeniería") || name.includes("sistemas") || name.includes("desarrollo")) {
-            score += 4;
-          }
-        }
-        if (normalized.includes("corta") || normalized.includes("bootcamp") || normalized.includes("rápida") || normalized.includes("laboral")) {
-          if (level === "bootcamp" || level === "curso" || name.includes("desarrollo")) {
-            score += 4;
-          }
-        }
-        if (normalized.includes("salud") || normalized.includes("medicina") || normalized.includes("médic")) {
-          if (cat.includes("salud") || name.includes("medicina")) {
-            score += 4;
-          }
-        }
-
-        return {
-          program: prog,
-          institution: o.campuses?.institutions?.name ?? "Institución",
-          score
-        };
-      }).filter(Boolean) as Array<{ program: any, institution: string, score: number }>;
-
-      // Sort scored matching programs descending
-      const matched = scoredPrograms
-        .filter(sp => sp.score > 0)
-        .sort((a, b) => b.score - a.score);
-
-      let recs: Message["recommendations"] = [];
-      let aiText = "";
-
-      if (matched.length > 0) {
-        const topMatched = matched.slice(0, 2);
-        const primaryCat = topMatched[0].program.category?.toLowerCase() || "";
-        
-        if (primaryCat.includes("tecnología") || primaryCat.includes("ingeniería")) {
-          aiText = "¡Excelente interés! Si te apasiona la tecnología y resolver problemas complejos mediante el desarrollo de software o infraestructura digital, te recomiendo considerar las siguientes opciones reales de nuestra base de datos:";
-        } else if (primaryCat.includes("salud") || primaryCat.includes("medicina")) {
-          aiText = "Si tienes vocación para las ciencias de la salud, el cuidado humano y la investigación médica, estas son opciones destacadas en nuestra base de datos:";
-        } else {
-          aiText = "Basado en tu mensaje, he analizado las opciones en nuestra base de datos y estas son las mejores recomendaciones de programas académicos para ti:";
-        }
-
-        recs = topMatched.map(item => ({
-          name: item.program.name,
-          institution: item.institution,
-          reason: item.program.description || `Programa de nivel ${item.program.level} en el área de ${item.program.category}.`,
-          href: `/programas/${item.program.slug || item.program.id}`
-        }));
-      } else {
-        // Fallback default programs
-        const defaultItems = (offerings ?? []).slice(0, 2);
-        aiText = "¡Hola! He analizado tus intereses. Aunque no encontré coincidencias exactas para esos términos específicos, te recomiendo explorar estas opciones destacadas disponibles en nuestra base de datos:";
-
-        recs = defaultItems.map((o: any) => ({
-          name: o.programs?.name ?? "Programa Académico",
-          institution: o.campuses?.institutions?.name ?? "Institución",
-          reason: o.programs?.description ?? "Explora este programa y sus oportunidades de desarrollo profesional.",
-          href: `/programas/${o.programs?.slug || o.programs?.id}`
-        }));
+      if (!response.ok) {
+        throw new Error(`Error en API: ${response.status}`);
       }
+
+      const data = await response.json();
+      const aiText = data.text || "Lo siento, no pude procesar tu solicitud.";
+      const recs = data.recommendations || [];
 
       setMessages((prev) => [
         ...prev,
@@ -165,13 +82,13 @@ export default function AIAdvisorPage() {
         },
       ]);
     } catch (err) {
-      console.error("AI Advisor Query Error:", err);
+      console.error("AI Advisor API Error:", err);
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now() + 1,
           sender: "ai",
-          text: "Lo siento, tuve un inconveniente al consultar los programas académicos en tiempo real. Puedes explorar directamente todas nuestras carreras y becas usando la sección de búsqueda.",
+          text: "Lo siento, tuve un inconveniente al consultar con el orientador inteligente. Asegúrate de configurar la API Key de Gemini o inténtalo de nuevo más tarde.",
         },
       ]);
     } finally {

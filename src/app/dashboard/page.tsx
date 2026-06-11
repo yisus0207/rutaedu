@@ -64,7 +64,20 @@ export default function DashboardPage() {
         .eq("id", userId)
         .single();
 
-      if (profileData) setProfile(profileData);
+      if (profileData) {
+        setProfile(profileData);
+        if (profileData.role_id) {
+          const { data: role } = await supabase
+            .from("roles")
+            .select("name")
+            .eq("id", profileData.role_id)
+            .single();
+          if (role?.name === "campus_admin" || role?.name === "institution_admin") {
+            router.push("/universidad/dashboard");
+            return;
+          }
+        }
+      }
 
       // Load favorites with related data
       const { data: favsData } = await supabase
@@ -97,7 +110,7 @@ export default function DashboardPage() {
       if (favsData) {
         setFavorites(favsData.map((f: any) => {
           let campus = f.campuses;
-          
+
           // If this is a program favorite and campus is null, try to retrieve it from program_campuses relationship
           if (!campus && f.programs?.program_campuses?.[0]?.campuses) {
             const pcCampus = f.programs.program_campuses[0].campuses;
@@ -255,9 +268,8 @@ export default function DashboardPage() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center gap-3 px-3 h-11 rounded-xl text-xs font-bold text-left transition-all ${
-                      isActive ? "bg-primary text-white" : "text-text-secondary hover:bg-slate-50"
-                    }`}
+                    className={`flex items-center gap-3 px-3 h-11 rounded-xl text-xs font-bold text-left transition-all ${isActive ? "bg-primary text-white" : "text-text-secondary hover:bg-slate-50"
+                      }`}
                     style={{ minHeight: "44px" }}
                   >
                     <Icon className="w-4 h-4" />
@@ -308,8 +320,8 @@ export default function DashboardPage() {
                     const href = fav.program
                       ? `/programas/${fav.program.id}`
                       : fav.institution
-                      ? `/explorar?tipo=universidades`
-                      : `/explorar?tipo=becas`;
+                        ? `/explorar?tipo=universidades`
+                        : `/explorar?tipo=becas`;
 
                     return (
                       <div key={fav.id} className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">

@@ -156,7 +156,7 @@ function ExplorerContent() {
       user_id: userId,
       query: debouncedQuery.trim(),
       filters: activeType ? { tipo: activeType } : {},
-    }).then(() => {}); // fire and forget
+    }).then(() => { }); // fire and forget
   }, [debouncedQuery, userId]);
 
   // Filter locally after DB load
@@ -261,11 +261,10 @@ function ExplorerContent() {
                   <button
                     key={filter.id}
                     onClick={() => setActiveType(filter.id)}
-                    className={`flex items-center gap-3 px-3 h-11 rounded-xl text-xs font-bold border text-left transition-all ${
-                      isActive
+                    className={`flex items-center gap-3 px-3 h-11 rounded-xl text-xs font-bold border text-left transition-all ${isActive
                         ? "bg-primary border-primary text-white"
                         : "bg-slate-50 border-slate-100 text-text-secondary hover:bg-slate-100"
-                    }`}
+                      }`}
                     style={{ minHeight: "44px" }}
                   >
                     <Icon className="w-4 h-4" />
@@ -386,11 +385,10 @@ function ExplorerContent() {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleToggleFavorite(program)}
-                            className={`w-11 h-11 flex items-center justify-center rounded-xl border transition-all ${
-                              isFav
+                            className={`w-11 h-11 flex items-center justify-center rounded-xl border transition-all ${isFav
                                 ? "bg-red-50 border-red-200 text-red-500"
                                 : "border-slate-200 text-slate-400 hover:text-red-500 hover:bg-slate-50"
-                            }`}
+                              }`}
                             style={{ minHeight: "44px", minWidth: "44px" }}
                             aria-label={isFav ? "Quitar de favoritos" : "Guardar en favoritos"}
                             title={isFav ? "Quitar de favoritos" : userId ? "Guardar en favoritos" : "Inicia sesión para guardar"}
@@ -399,11 +397,10 @@ function ExplorerContent() {
                           </button>
                           <button
                             onClick={() => handleToggleCompare(program)}
-                            className={`w-11 h-11 flex items-center justify-center rounded-xl border transition-all ${
-                              isCompared
+                            className={`w-11 h-11 flex items-center justify-center rounded-xl border transition-all ${isCompared
                                 ? "bg-teal-50 border-teal-200 text-primary"
                                 : "border-slate-200 text-slate-400 hover:text-primary hover:bg-slate-50"
-                            }`}
+                              }`}
                             style={{ minHeight: "44px", minWidth: "44px" }}
                             aria-label="Agregar a comparar"
                           >

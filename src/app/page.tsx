@@ -2,7 +2,7 @@
 
 import React from "react";
 import Navbar from "@/components/Navbar";
-import SearchCard from "@/components/SearchCard";
+import FeaturedCategories from "@/components/FeaturedCategories";
 import VocationalCard from "@/components/VocationalCard";
 import CategoryCard from "@/components/CategoryCard";
 import TestimonialSlider from "@/components/TestimonialSlider";
@@ -51,7 +51,7 @@ export default function Home() {
             {/* Hero Action Buttons */}
             <div className="flex flex-col gap-2 max-w-[170px] xs:max-w-[190px] sm:max-w-xs">
               <Link
-                href="/test-vocacional"
+                href="/asesor-ia"
                 className="w-full inline-flex items-center justify-center gap-1.5 h-8.5 sm:h-12 rounded-full text-[10px] sm:text-xs font-bold text-white bg-[#00875A] hover:bg-[#006F48] transition-all transform active:scale-95 shadow-sm"
               >
                 <Compass className="w-3.5 h-3.5" />
@@ -69,10 +69,10 @@ export default function Home() {
       </section>
 
       {/* ============================================= */}
-      {/* SEARCH FILTER CARD                             */}
+      {/* FEATURED CATEGORIES                            */}
       {/* ============================================= */}
       <section className="py-2 px-4 sm:px-6 lg:px-8 max-w-xl sm:max-w-3xl lg:max-w-5xl mx-auto w-full">
-        <SearchCard />
+        <FeaturedCategories />
       </section>
 
       {/* ============================================= */}
@@ -176,11 +176,10 @@ export default function Home() {
             <div className="col-span-1 space-y-3">
               <h4 className="text-xs font-bold text-[#0A1E3A] uppercase tracking-wider">Estudiantes</h4>
               <ul className="space-y-2 text-xs font-medium text-[#64748B]">
-                <li><Link href="/test-vocacional" className="hover:text-[#00875A] transition-colors">Test Vocacional</Link></li>
+                <li><Link href="/asesor-ia" className="hover:text-[#00875A] transition-colors">Test Vocacional IA</Link></li>
                 <li><Link href="/explorar?tipo=carreras" className="hover:text-[#00875A] transition-colors">Buscar Carreras</Link></li>
                 <li><Link href="/explorar?tipo=universidades" className="hover:text-[#00875A] transition-colors">Universidades</Link></li>
                 <li><Link href="/explorar?tipo=becas" className="hover:text-[#00875A] transition-colors">Becas y Financiación</Link></li>
-                <li><Link href="/asesor-ia" className="hover:text-[#00875A] transition-colors">Asesor IA</Link></li>
               </ul>
             </div>
 

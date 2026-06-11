@@ -50,7 +50,7 @@ export default function FooterCTA() {
 
       <div className="w-full md:w-auto flex-shrink-0">
         <Link
-          href="/test-vocacional"
+          href="/asesor-ia"
           className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-6 h-12 rounded-full text-xs font-bold text-white bg-[#0F766E] hover:bg-[#0D665F] shadow-sm transition-all transform active:scale-95"
           style={{ minHeight: "48px" }}
         >

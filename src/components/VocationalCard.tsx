@@ -67,23 +67,23 @@ export default function VocationalCard() {
 
         <div className="space-y-0.5 min-w-0">
           <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[7.5px] sm:text-[9.5px] font-extrabold bg-[#D6F2EA] text-[#007A53] tracking-wide uppercase">
-            TEST VOCACIONAL
+            Test Vocacional IA
           </span>
           <h3 className="text-[11px] sm:text-base font-extrabold text-[#0F172A] leading-tight">
             ¿No sabes qué estudiar?
           </h3>
           <p className="text-[8.5px] sm:text-xs text-[#475569] leading-snug font-medium max-w-[170px] xs:max-w-[210px] sm:max-w-sm">
-            Responde unas preguntas y descubre carreras ideales para ti según tus intereses y habilidades.
+            Platica con nuestro asesor inteligente y descubre carreras recomendadas según tus gustos, ubicación y presupuesto.
           </p>
         </div>
       </div>
 
       <div className="flex-shrink-0">
         <Link
-          href="/test-vocacional"
+          href="/asesor-ia"
           className="inline-flex items-center justify-center gap-1 px-2.5 h-8 sm:px-5 sm:h-11 rounded-full text-[10px] sm:text-xs font-bold text-white bg-[#00875A] hover:bg-[#006F48] transition-all transform active:scale-95 shadow-sm"
         >
-          <span>Hacer test</span>
+          <span>Iniciar chat</span>
           <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
         </Link>
       </div>
