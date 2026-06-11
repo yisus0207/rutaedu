@@ -72,7 +72,20 @@ export default function DashboardPage() {
         .select(`
           id,
           entity_type,
-          programs:program_id ( id, name, slug, level ),
+          programs:program_id (
+            id,
+            name,
+            slug,
+            level,
+            program_campuses (
+              campuses (
+                name,
+                institutions (
+                  name
+                )
+              )
+            )
+          ),
           campuses:campus_id ( name, institutions:institution_id ( name ) ),
           institutions:institution_id ( id, name ),
           scholarships:scholarship_id ( id, name, provider )
@@ -82,14 +95,27 @@ export default function DashboardPage() {
         .limit(20);
 
       if (favsData) {
-        setFavorites(favsData.map((f: any) => ({
-          id: f.id,
-          entity_type: f.entity_type,
-          program: f.programs,
-          campus: f.campuses,
-          institution: f.institutions,
-          scholarship: f.scholarships,
-        })));
+        setFavorites(favsData.map((f: any) => {
+          let campus = f.campuses;
+          
+          // If this is a program favorite and campus is null, try to retrieve it from program_campuses relationship
+          if (!campus && f.programs?.program_campuses?.[0]?.campuses) {
+            const pcCampus = f.programs.program_campuses[0].campuses;
+            campus = {
+              name: pcCampus.name,
+              institution: pcCampus.institutions
+            };
+          }
+
+          return {
+            id: f.id,
+            entity_type: f.entity_type,
+            program: f.programs,
+            campus: campus,
+            institution: f.institutions,
+            scholarship: f.scholarships,
+          };
+        }));
       }
 
       // Load search history
@@ -266,10 +292,19 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {favorites.map((fav) => {
                     const title = fav.program?.name ?? fav.institution?.name ?? fav.scholarship?.name ?? "—";
+                    const badgeTranslations: Record<string, string> = {
+                      program: "Programa / Carrera",
+                      institution: "Institución",
+                      campus: "Sede",
+                      scholarship: "Beca",
+                    };
+                    const badge = badgeTranslations[fav.entity_type] || fav.entity_type;
+
                     const subtitle = fav.program
-                      ? `${fav.campus?.institution?.name ?? ""} • ${fav.campus?.name ?? ""}`
+                      ? (fav.campus?.institution?.name || fav.campus?.name)
+                        ? `${fav.campus?.institution?.name ?? ""} • ${fav.campus?.name ?? ""}`.trim().replace(/^•\s*|\s*•$/, "")
+                        : ""
                       : fav.scholarship?.provider ?? "";
-                    const badge = fav.entity_type;
                     const href = fav.program
                       ? `/programas/${fav.program.id}`
                       : fav.institution
@@ -280,7 +315,7 @@ export default function DashboardPage() {
                       <div key={fav.id} className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
                         <div className="space-y-1.5">
                           <div className="flex justify-between items-start">
-                            <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded capitalize">{badge}</span>
+                            <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded">{badge}</span>
                             <button onClick={() => handleRemoveFavorite(fav.id)} title="Quitar de favoritos">
                               <Heart className="w-4 h-4 fill-red-500 text-red-500" />
                             </button>

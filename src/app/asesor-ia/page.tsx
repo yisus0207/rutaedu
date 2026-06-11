@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import { Send, Sparkles, User, BrainCircuit, ArrowRight, MessageCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
 interface Message {
   id: number;
@@ -36,7 +37,7 @@ export default function AIAdvisorPage() {
     "Carreras creativas con buen salario",
   ];
 
-  const handleSend = (text: string) => {
+  const handleSend = async (text: string) => {
     if (!text.trim()) return;
 
     const userMsg: Message = {
@@ -49,59 +50,109 @@ export default function AIAdvisorPage() {
     setInput("");
     setIsTyping(true);
 
-    // Simulate AI response based on queries
-    setTimeout(() => {
-      let aiText = "Entiendo perfectamente tus intereses. Aquí tienes un análisis de tu camino ideal:";
-      let recs: Message["recommendations"] = [];
+    try {
+      // Fetch active programs from Supabase
+      const { data: offerings } = await supabase
+        .from("program_campuses")
+        .select(`
+          programs (
+            id,
+            name,
+            slug,
+            level,
+            category,
+            description
+          ),
+          campuses (
+            name,
+            institutions (
+              name
+            )
+          )
+        `)
+        .eq("status", "active");
 
       const normalized = text.toLowerCase();
+      const scoredPrograms = (offerings ?? []).map((o: any) => {
+        const prog = o.programs;
+        if (!prog) return null;
 
-      if (normalized.includes("tecnología") || normalized.includes("matemáticas")) {
-        aiText = "Si te atrae el mundo tecnológico pero prefieres evitar matemáticas abstractas o cálculo avanzado, el Desarrollo Web, Diseño de Experiencia de Usuario (UI/UX) o Análisis de Datos son excelentes alternativas. Se centran en lógica de programación y creatividad sin requerir álgebra avanzada.";
-        recs = [
-          {
-            name: "Desarrollo Full Stack Web",
-            institution: "RutaEdu Academy",
-            reason: "Se enfoca en programación práctica intensiva en 16 semanas. Sin cursos teóricos de matemáticas.",
-            href: "/programas/desarrollo-full-stack",
-          },
-          {
-            name: "Diseño UX/UI & Prototipado",
-            institution: "RutaEdu Academy",
-            reason: "Carrera creativa digital enfocada en la experiencia de usuario y arquitectura de información.",
-            href: "/explorar?q=Diseño",
-          },
-        ];
-      } else if (normalized.includes("carrera corta") || normalized.includes("laboral")) {
-        aiText = "Para una inserción laboral rápida, los programas tipo Bootcamp de programación o carreras Tecnológicas en Marketing o Logística ofrecen el mejor retorno de inversión en menos de 2 años.";
-        recs = [
-          {
-            name: "Desarrollo Full Stack Web",
-            institution: "RutaEdu Academy",
-            reason: "Alta tasa de empleabilidad (85%) y duración de solo 4 meses.",
-            href: "/programas/desarrollo-full-stack",
-          },
-        ];
-      } else if (normalized.includes("beca") || normalized.includes("becas")) {
-        aiText = "Actualmente contamos con becas del gobierno y convenios privados para áreas de tecnología y ciencias exactas. Aquí tienes una opción financiada al 100%:";
-        recs = [
-          {
-            name: "Ingeniería de Sistemas y Computación (Beca Talento Digital)",
-            institution: "Universidad de los Andes",
-            reason: "Cubre el 100% del valor de la matrícula en alianza con MinTIC.",
-            href: "/explorar?q=Sistemas",
-          },
-        ];
+        let score = 0;
+        const name = (prog.name || "").toLowerCase();
+        const cat = (prog.category || "").toLowerCase();
+        const desc = (prog.description || "").toLowerCase();
+        const level = (prog.level || "").toLowerCase();
+
+        // Check for general search term overlaps
+        const terms = normalized.split(/\s+/).filter(t => t.length > 2);
+        for (const term of terms) {
+          if (name.includes(term)) score += 5;
+          if (cat.includes(term)) score += 3;
+          if (desc.includes(term)) score += 2;
+          if (level.includes(term)) score += 1;
+        }
+
+        // Custom keyword mapping helpers
+        if (normalized.includes("tecnología") || normalized.includes("programar") || normalized.includes("desarrollo") || normalized.includes("matemáticas")) {
+          if (cat.includes("tecnología") || cat.includes("ingeniería") || name.includes("sistemas") || name.includes("desarrollo")) {
+            score += 4;
+          }
+        }
+        if (normalized.includes("corta") || normalized.includes("bootcamp") || normalized.includes("rápida") || normalized.includes("laboral")) {
+          if (level === "bootcamp" || level === "curso" || name.includes("desarrollo")) {
+            score += 4;
+          }
+        }
+        if (normalized.includes("salud") || normalized.includes("medicina") || normalized.includes("médic")) {
+          if (cat.includes("salud") || name.includes("medicina")) {
+            score += 4;
+          }
+        }
+
+        return {
+          program: prog,
+          institution: o.campuses?.institutions?.name ?? "Institución",
+          score
+        };
+      }).filter(Boolean) as Array<{ program: any, institution: string, score: number }>;
+
+      // Sort scored matching programs descending
+      const matched = scoredPrograms
+        .filter(sp => sp.score > 0)
+        .sort((a, b) => b.score - a.score);
+
+      let recs: Message["recommendations"] = [];
+      let aiText = "";
+
+      if (matched.length > 0) {
+        const topMatched = matched.slice(0, 2);
+        const primaryCat = topMatched[0].program.category?.toLowerCase() || "";
+        
+        if (primaryCat.includes("tecnología") || primaryCat.includes("ingeniería")) {
+          aiText = "¡Excelente interés! Si te apasiona la tecnología y resolver problemas complejos mediante el desarrollo de software o infraestructura digital, te recomiendo considerar las siguientes opciones reales de nuestra base de datos:";
+        } else if (primaryCat.includes("salud") || primaryCat.includes("medicina")) {
+          aiText = "Si tienes vocación para las ciencias de la salud, el cuidado humano y la investigación médica, estas son opciones destacadas en nuestra base de datos:";
+        } else {
+          aiText = "Basado en tu mensaje, he analizado las opciones en nuestra base de datos y estas son las mejores recomendaciones de programas académicos para ti:";
+        }
+
+        recs = topMatched.map(item => ({
+          name: item.program.name,
+          institution: item.institution,
+          reason: item.program.description || `Programa de nivel ${item.program.level} en el área de ${item.program.category}.`,
+          href: `/programas/${item.program.slug || item.program.id}`
+        }));
       } else {
-        aiText = "¡Excelente consulta! Para ese camino te aconsejo explorar programas profesionales de pregrado o bootcamps especializados. Se enfocan en adquirir habilidades prácticas rápido.";
-        recs = [
-          {
-            name: "Ingeniería de Sistemas y Computación",
-            institution: "Universidad de los Andes",
-            reason: "Programa académico líder con fuerte vinculación empresarial en el país.",
-            href: "/explorar?q=Sistemas",
-          },
-        ];
+        // Fallback default programs
+        const defaultItems = (offerings ?? []).slice(0, 2);
+        aiText = "¡Hola! He analizado tus intereses. Aunque no encontré coincidencias exactas para esos términos específicos, te recomiendo explorar estas opciones destacadas disponibles en nuestra base de datos:";
+
+        recs = defaultItems.map((o: any) => ({
+          name: o.programs?.name ?? "Programa Académico",
+          institution: o.campuses?.institutions?.name ?? "Institución",
+          reason: o.programs?.description ?? "Explora este programa y sus oportunidades de desarrollo profesional.",
+          href: `/programas/${o.programs?.slug || o.programs?.id}`
+        }));
       }
 
       setMessages((prev) => [
@@ -113,8 +164,19 @@ export default function AIAdvisorPage() {
           recommendations: recs,
         },
       ]);
+    } catch (err) {
+      console.error("AI Advisor Query Error:", err);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          sender: "ai",
+          text: "Lo siento, tuve un inconveniente al consultar los programas académicos en tiempo real. Puedes explorar directamente todas nuestras carreras y becas usando la sección de búsqueda.",
+        },
+      ]);
+    } finally {
       setIsTyping(false);
-    }, 1200);
+    }
   };
 
   return (

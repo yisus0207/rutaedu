@@ -186,19 +186,25 @@ function ExplorerContent() {
       // Remove from favorites
       const favRowId = favIds.get(program.id);
       if (favRowId) {
-        await supabase.from("favorites").delete().eq("id", favRowId);
-        setFavorites(prev => { const s = new Set(prev); s.delete(program.id); return s; });
-        setFavIds(prev => { const m = new Map(prev); m.delete(program.id); return m; });
+        const { error } = await supabase.from("favorites").delete().eq("id", favRowId);
+        if (!error) {
+          setFavorites(prev => { const s = new Set(prev); s.delete(program.id); return s; });
+          setFavIds(prev => { const m = new Map(prev); m.delete(program.id); return m; });
+        } else {
+          console.error("Error removing favorite:", error.message);
+        }
       }
     } else {
       // Add to favorites
+      // IMPORTANT: DB check constraint requires that for entity_type='program',
+      // campus_id, institution_id and scholarship_id MUST be NULL.
       const { data, error } = await supabase
         .from("favorites")
         .insert({
           user_id: userId,
           entity_type: "program",
           program_id: program.id,
-          campus_id: program.campusId || null,
+          campus_id: null,
           institution_id: null,
           scholarship_id: null,
         })
@@ -208,6 +214,8 @@ function ExplorerContent() {
       if (!error && data) {
         setFavorites(prev => new Set([...prev, program.id]));
         setFavIds(prev => new Map([...prev, [program.id, data.id]]));
+      } else if (error) {
+        console.error("Error saving favorite:", error.message, error.details);
       }
     }
   };
