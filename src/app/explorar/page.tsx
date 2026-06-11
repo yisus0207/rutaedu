@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
-import { Search, GraduationCap, School, BookOpen, Award, Check, X, Scale, Heart, AlertCircle, Loader2 } from "lucide-react";
+import { Search, GraduationCap, School, BookOpen, Award, Check, X, Scale, Heart, AlertCircle, Loader2, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
@@ -22,6 +22,9 @@ interface Program {
   durationSemesters: number;
   modality: string;
   scholarshipsAvailable: boolean;
+  isExternal: boolean;
+  affiliateUrl: string | null;
+  platformName: string | null;
 }
 
 function ExplorerContent() {
@@ -96,7 +99,10 @@ function ExplorerContent() {
             name,
             slug,
             level,
-            category
+            category,
+            is_external,
+            affiliate_url,
+            platform_name
           ),
           campuses (
             id,
@@ -135,6 +141,9 @@ function ExplorerContent() {
         institutionAccreditation: pc.campuses?.institutions?.accreditation_status ?? "",
         campusId: pc.campuses?.id ?? "",
         campusName: pc.campuses?.name ?? "",
+        isExternal: pc.programs?.is_external ?? false,
+        affiliateUrl: pc.programs?.affiliate_url ?? null,
+        platformName: pc.programs?.platform_name ?? null,
         tuitionCost: pc.tuition_cost ?? 0,
         currency: pc.currency ?? "COP",
         durationSemesters: pc.duration_semesters ?? 0,
@@ -353,9 +362,15 @@ function ExplorerContent() {
                     >
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 uppercase">
-                            {program.level}
-                          </span>
+                          {program.isExternal ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-indigo-50 text-indigo-700 uppercase tracking-wide border border-indigo-100">
+                              Curso {program.platformName || "Online"}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 uppercase">
+                              {program.level}
+                            </span>
+                          )}
                           {program.scholarshipsAvailable && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-100 text-purple-700 uppercase">
                               Beca Disponible
@@ -374,8 +389,8 @@ function ExplorerContent() {
                           {program.institutionName} • <span className="text-slate-400">{program.campusName}</span>
                         </p>
                         <div className="flex flex-wrap gap-4 text-xs font-semibold text-text-secondary pt-1">
-                          <div>Costo: <span className="text-text-primary font-bold">{formatCurrency(program.tuitionCost, program.currency)}</span></div>
-                          <div>Duración: <span className="text-text-primary font-bold">{program.durationSemesters} semestres</span></div>
+                          <div>Costo: <span className="text-text-primary font-bold">{program.tuitionCost === 0 ? "Gratis" : formatCurrency(program.tuitionCost, program.currency)}</span></div>
+                          <div>Duración: <span className="text-text-primary font-bold">{program.isExternal ? "A tu propio ritmo" : `${program.durationSemesters} semestres`}</span></div>
                           <div>Modalidad: <span className="text-text-primary font-bold capitalize">{program.modality}</span></div>
                         </div>
                       </div>
@@ -407,13 +422,26 @@ function ExplorerContent() {
                             <Scale className="w-5 h-5" />
                           </button>
                         </div>
-                        <Link
-                          href={`/programas/${program.id}`}
-                          className="inline-flex items-center justify-center px-4 h-11 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl shadow-sm transition-all"
-                          style={{ minHeight: "44px" }}
-                        >
-                          Ver detalles
-                        </Link>
+                        {program.isExternal ? (
+                          <a
+                            href={program.affiliateUrl || "#"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center gap-1.5 px-4 h-11 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-extrabold rounded-xl shadow-md transition-all active:scale-95 whitespace-nowrap"
+                            style={{ minHeight: "44px" }}
+                          >
+                            <span>Ver en {program.platformName || "Plataforma"}</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        ) : (
+                          <Link
+                            href={`/programas/${program.id}`}
+                            className="inline-flex items-center justify-center px-4 h-11 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl shadow-sm transition-all whitespace-nowrap"
+                            style={{ minHeight: "44px" }}
+                          >
+                            Ver detalles
+                          </Link>
+                        )}
                       </div>
                     </div>
                   );

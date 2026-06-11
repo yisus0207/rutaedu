@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, use } from "react";
 import Navbar from "@/components/Navbar";
-import { GraduationCap, Calendar, MapPin, DollarSign, Award, BookOpen, Send, CheckCircle, AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
+import { GraduationCap, Calendar, MapPin, DollarSign, Award, BookOpen, Send, CheckCircle, AlertCircle, ArrowLeft, Loader2, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
@@ -14,6 +14,9 @@ type ProgramDetails = {
   description: string;
   category: string;
   degree_title: string;
+  is_external: boolean;
+  affiliate_url: string | null;
+  platform_name: string | null;
   campus: {
     id: string;
     name: string;
@@ -64,6 +67,9 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
           description,
           category,
           degree_title,
+          is_external,
+          affiliate_url,
+          platform_name,
           program_campuses (
             id,
             tuition_cost,
@@ -94,10 +100,12 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
         return;
       }
 
+      console.log("Supabase raw program data:", data);
+
       const pc = (data as any).program_campuses?.[0];
       const campus = pc?.campuses ?? null;
 
-      setProgram({
+      const mapped = {
         id: data.id,
         name: data.name,
         slug: data.slug,
@@ -105,6 +113,9 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
         description: data.description,
         category: data.category,
         degree_title: data.degree_title,
+        is_external: data.is_external ?? false,
+        affiliate_url: data.affiliate_url ?? null,
+        platform_name: data.platform_name ?? null,
         campus: campus
           ? {
               id: campus.id,
@@ -119,7 +130,10 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
               institution: campus.institutions,
             }
           : null,
-      });
+      };
+
+      console.log("Mapped program details state:", mapped);
+      setProgram(mapped);
 
       setLoading(false);
     };
@@ -247,7 +261,9 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
                     <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
                     <div>
                       <span className="text-[10px] text-text-secondary block font-bold">Duración</span>
-                      <span className="text-xs font-bold text-text-primary">{program.campus.duration_semesters} semestres</span>
+                      <span className="text-xs font-bold text-text-primary">
+                        {program.is_external ? "Propio ritmo" : `${program.campus.duration_semesters} semestres`}
+                      </span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -257,7 +273,7 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
                       <span className="text-xs font-bold text-text-primary capitalize">{program.campus.modality}</span>
                     </div>
                   </div>
-                  {program.campus.institution?.accreditation_status && (
+                  {!program.is_external && program.campus.institution?.accreditation_status && (
                     <div className="flex items-center gap-2">
                       <Award className="w-4 h-4 text-primary flex-shrink-0" />
                       <div>
@@ -271,7 +287,9 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
                       <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
                       <div>
                         <span className="text-[10px] text-text-secondary block font-bold">Dirección</span>
-                        <span className="text-xs font-bold text-text-primary line-clamp-1">{program.campus.address}</span>
+                        <span className="text-xs font-bold text-text-primary line-clamp-1">
+                          {program.is_external ? "Acceso en línea" : program.campus.address}
+                        </span>
                       </div>
                     </div>
                   )}
@@ -304,100 +322,146 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
           )}
         </div>
 
-        {/* Right Column: Call to action Lead Form */}
+        {/* Right Column: Call to action Lead Form or Affiliate Promo */}
         <div className="w-full md:w-80 flex-shrink-0">
           <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xl sticky top-24 space-y-6">
 
-            {program.campus && (
-              <div className="space-y-2">
-                <span className="text-[10px] font-bold text-text-secondary block uppercase tracking-widest">Matrícula por semestre</span>
-                <h3 className="text-xl font-extrabold text-text-primary">
-                  {formatCurrency(program.campus.tuition_cost, program.campus.currency)}
-                </h3>
-                <span className="text-[10px] text-text-secondary font-medium block">Precios oficiales vigentes.</span>
-              </div>
-            )}
+            {program.is_external ? (
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <span className="text-[10px] font-bold text-text-secondary block uppercase tracking-widest">
+                    Costo Único del Curso
+                  </span>
+                  <h3 className="text-2xl font-extrabold text-text-primary">
+                    {program.campus ? formatCurrency(program.campus.tuition_cost, program.campus.currency) : "Gratis"}
+                  </h3>
+                  <span className="text-[10px] text-emerald-600 font-bold block">
+                    Acceso de por vida • Certificado incluido
+                  </span>
+                </div>
 
-            {leadSubmitted ? (
-              <div className="bg-teal-50 border border-teal-200 rounded-2xl p-5 text-center space-y-3">
-                <CheckCircle className="w-10 h-10 text-primary mx-auto" />
-                <h4 className="text-sm font-extrabold text-text-primary">¡Solicitud Enviada!</h4>
-                <p className="text-[11px] text-text-secondary leading-relaxed">
-                  Un asesor de la institución se pondrá en contacto contigo en las próximas horas.
-                </p>
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                  <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider block">
+                    Plataforma Proveedora
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-indigo-600" />
+                    <span className="text-sm font-extrabold text-slate-800">{program.platform_name}</span>
+                  </div>
+                  <p className="text-[10.5px] text-slate-500 leading-relaxed font-semibold">
+                    Inscríbete directamente en su plataforma oficial y comienza a estudiar a tu propio ritmo hoy mismo.
+                  </p>
+                </div>
+
+                <a
+                  href={program.affiliate_url || "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full h-12 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-extrabold rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-95"
+                  style={{ minHeight: "48px" }}
+                >
+                  <span>Ir al curso en {program.platform_name}</span>
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+
+                <div className="text-[9px] text-text-secondary text-center font-bold border-t border-slate-100 pt-3">
+                  Al comprar a través de este enlace, apoyas a RutaEdu a seguir ofreciendo orientación vocacional gratuita.
+                </div>
               </div>
             ) : (
-              <form onSubmit={handleContactSubmit} className="space-y-3">
-                <h4 className="text-xs font-bold text-text-primary">Solicitar Información Directa</h4>
-
-                {leadError && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 text-[11px] rounded-xl p-3 flex items-center gap-2">
-                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                    <span>{leadError}</span>
+              <>
+                {program.campus && (
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-bold text-text-secondary block uppercase tracking-widest">Matrícula por semestre</span>
+                    <h3 className="text-xl font-extrabold text-text-primary">
+                      {formatCurrency(program.campus.tuition_cost, program.campus.currency)}
+                    </h3>
+                    <span className="text-[10px] text-text-secondary font-medium block">Precios oficiales vigentes.</span>
                   </div>
                 )}
 
-                <div>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Tu nombre completo"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-3.5 h-11 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white text-xs font-semibold outline-none focus:border-primary transition-all"
-                    style={{ minHeight: "44px" }}
-                  />
-                </div>
-                <div>
-                  <input
-                    type="email"
-                    required
-                    placeholder="Tu correo electrónico"
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full px-3.5 h-11 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white text-xs font-semibold outline-none focus:border-primary transition-all"
-                    style={{ minHeight: "44px" }}
-                  />
-                </div>
-                <div>
-                  <input
-                    type="tel"
-                    required
-                    placeholder="Tu número celular"
-                    value={formData.phone}
-                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                    className="w-full px-3.5 h-11 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white text-xs font-semibold outline-none focus:border-primary transition-all"
-                    style={{ minHeight: "44px" }}
-                  />
-                </div>
-                <div>
-                  <textarea
-                    placeholder="Mensaje o dudas..."
-                    value={formData.notes}
-                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                    className="w-full p-3 h-20 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white text-xs font-semibold outline-none focus:border-primary transition-all resize-none"
-                  />
-                </div>
+                {leadSubmitted ? (
+                  <div className="bg-teal-50 border border-teal-200 rounded-2xl p-5 text-center space-y-3">
+                    <CheckCircle className="w-10 h-10 text-primary mx-auto" />
+                    <h4 className="text-sm font-extrabold text-text-primary">¡Solicitud Enviada!</h4>
+                    <p className="text-[11px] text-text-secondary leading-relaxed">
+                      Un asesor de la institución se pondrá en contacto contigo en las próximas horas.
+                    </p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleContactSubmit} className="space-y-3">
+                    <h4 className="text-xs font-bold text-text-primary">Solicitar Información Directa</h4>
 
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full h-12 bg-primary hover:bg-primary-hover text-white text-xs font-extrabold rounded-xl shadow-md flex items-center justify-center gap-1.5 transition-all active:scale-95 disabled:opacity-60"
-                  style={{ minHeight: "48px" }}
-                >
-                  {submitting ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
-                  <span>{submitting ? "Enviando..." : "Enviar datos de contacto"}</span>
-                </button>
-              </form>
+                    {leadError && (
+                      <div className="bg-red-50 border border-red-200 text-red-700 text-[11px] rounded-xl p-3 flex items-center gap-2">
+                        <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span>{leadError}</span>
+                      </div>
+                    )}
+
+                    <div>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Tu nombre completo"
+                        value={formData.name}
+                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                        className="w-full px-3.5 h-11 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white text-xs font-semibold outline-none focus:border-primary transition-all"
+                        style={{ minHeight: "44px" }}
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="email"
+                        required
+                        placeholder="Tu correo electrónico"
+                        value={formData.email}
+                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                        className="w-full px-3.5 h-11 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white text-xs font-semibold outline-none focus:border-primary transition-all"
+                        style={{ minHeight: "44px" }}
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="Tu número celular"
+                        value={formData.phone}
+                        onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                        className="w-full px-3.5 h-11 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white text-xs font-semibold outline-none focus:border-primary transition-all"
+                        style={{ minHeight: "44px" }}
+                      />
+                    </div>
+                    <div>
+                      <textarea
+                        placeholder="Mensaje o dudas..."
+                        value={formData.notes}
+                        onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                        className="w-full p-3 h-20 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white text-xs font-semibold outline-none focus:border-primary transition-all resize-none"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="w-full h-12 bg-primary hover:bg-primary-hover text-white text-xs font-extrabold rounded-xl shadow-md flex items-center justify-center gap-1.5 transition-all active:scale-95 disabled:opacity-60"
+                      style={{ minHeight: "48px" }}
+                    >
+                      {submitting ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                      <span>{submitting ? "Enviando..." : "Enviar datos de contacto"}</span>
+                    </button>
+                  </form>
+                )}
+
+                <div className="text-[10px] text-text-secondary text-center font-semibold border-t border-slate-100 pt-3">
+                  RutaEdu no cobra comisiones a los estudiantes por aplicar.
+                </div>
+              </>
             )}
-
-            <div className="text-[10px] text-text-secondary text-center font-semibold border-t border-slate-100 pt-3">
-              RutaEdu no cobra comisiones a los estudiantes por aplicar.
-            </div>
           </div>
         </div>
 
